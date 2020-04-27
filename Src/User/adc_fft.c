@@ -3,7 +3,7 @@
 uint16_t adc_result[ADC_SAMPLE_POINTS];
 float32_t fft_input[ADC_SAMPLE_POINTS];
 float32_t fft_output[ADC_SAMPLE_POINTS];
-float32_t fft_result[ADC_SAMPLE_POINTS/2];
+float32_t fft_result[FFT_POINTS];
 
 
 arm_rfft_fast_instance_f32 s;
@@ -11,6 +11,7 @@ arm_rfft_fast_instance_f32 s;
 void init_adc_fft()
 {
     HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_result, ADC_SAMPLE_POINTS);
+    HAL_TIM_Base_Start(&htim6);
     arm_rfft_fast_init_f32(&s, ADC_SAMPLE_POINTS);
 }
 
@@ -22,7 +23,7 @@ void process_fft()
 
   /* Process the data through the Complex Magnitude Module for
   calculating the magnitude at each bin */
-    arm_cmplx_mag_f32(fft_output, fft_result, ADC_SAMPLE_POINTS/2);
+    arm_cmplx_mag_f32(fft_output, fft_result, FFT_POINTS);
 
   /* Calculates maxValue and returns corresponding BIN value */
 //   arm_max_f32(testOutput, fftSize, &maxValue, &testIndex);
