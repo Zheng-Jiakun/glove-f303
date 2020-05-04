@@ -1,6 +1,7 @@
 #include "usart_protocal.h"
 #include "adc_fft.h"
 #include "usart.h"
+#include "dsp.h"
 
 void uart_sent_float(float32_t num)
 {
