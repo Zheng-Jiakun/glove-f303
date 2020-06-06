@@ -90,11 +90,11 @@ void fir_lpf()
 
     // snr = arm_snr_f32(&refOutput[0], outputF32, ADC_SAMPLE_POINTS);
 
-    if (snr < SNR_THRESHOLD_F32)
+    // if (snr < SNR_THRESHOLD_F32)
     
-        status = ARM_MATH_TEST_FAILURE;
-    else
-        status = ARM_MATH_SUCCESS;
+    //     status = ARM_MATH_TEST_FAILURE;
+    // else
+    //     status = ARM_MATH_SUCCESS;
     
     // for (uint16_t i = 0; i < ADC_SAMPLE_POINTS; i++)
     //     outputF32[i] *= 2.0f;

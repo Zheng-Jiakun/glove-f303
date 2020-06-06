@@ -33,13 +33,29 @@
 extern UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN Private defines */
+#define RECEIVELEN 64
+#define USART_DMA_SENDING 1//发送未完成
+#define USART_DMA_SENDOVER 0//发送完成
+	 
+#define MODBUD_SENDMODE 1	 
+	 
+typedef struct
+{
+	uint8_t Receive:1;//空闲接收标记
+	uint8_t Send:1;//发送完成标记
+	uint16_t RxLen;//接收长度
+	uint8_t RxBuf[RECEIVELEN];//DMA接收缓存
+}UART_T;
 
+extern UART_T xtUart1,xtUart3;
 /* USER CODE END Private defines */
 
 void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+void Usart1SendData_DMA(uint8_t *pdata, uint16_t Length);
+void Usart3SendData_DMA(uint8_t *pdata, uint16_t Length);
+void UsartReceive_IDLE(UART_HandleTypeDef *huart);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

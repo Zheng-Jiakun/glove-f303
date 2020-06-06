@@ -21,7 +21,7 @@
 #include "usart.h"
 
 /* USER CODE BEGIN 0 */
-
+UART_T xtUart1, xtUart3;
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
@@ -82,7 +82,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     hdma_usart1_rx.Init.MemInc = DMA_MINC_ENABLE;
     hdma_usart1_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     hdma_usart1_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-    hdma_usart1_rx.Init.Mode = DMA_CIRCULAR;
+    hdma_usart1_rx.Init.Mode = DMA_NORMAL;
     hdma_usart1_rx.Init.Priority = DMA_PRIORITY_LOW;
     if (HAL_DMA_Init(&hdma_usart1_rx) != HAL_OK)
     {
@@ -107,6 +107,9 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 
     __HAL_LINKDMA(uartHandle,hdmatx,hdma_usart1_tx);
 
+    /* USART1 interrupt Init */
+    HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(USART1_IRQn);
   /* USER CODE BEGIN USART1_MspInit 1 */
 
   /* USER CODE END USART1_MspInit 1 */
@@ -133,6 +136,9 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
     /* USART1 DMA DeInit */
     HAL_DMA_DeInit(uartHandle->hdmarx);
     HAL_DMA_DeInit(uartHandle->hdmatx);
+
+    /* USART1 interrupt Deinit */
+    HAL_NVIC_DisableIRQ(USART1_IRQn);
   /* USER CODE BEGIN USART1_MspDeInit 1 */
 
   /* USER CODE END USART1_MspDeInit 1 */
@@ -140,6 +146,107 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 } 
 
 /* USER CODE BEGIN 1 */
+#ifdef __GNUC__
+
+/* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
+ set to 'Yes') calls __io_putchar() */
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif /* __GNUC__ */
+
+PUTCHAR_PROTOTYPE
+{
+  HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
+  return ch;
+}
+
+//DMA发送函数
+void Usart1SendData_DMA(uint8_t *pdata, uint16_t Length)
+{
+  if (Length == 0)
+    return;
+  while (xtUart1.Send == USART_DMA_SENDING)
+  {
+  }
+  xtUart1.Send = USART_DMA_SENDING;
+  HAL_UART_Transmit_DMA(&huart1, pdata, Length);
+}
+
+// void Usart3SendData_DMA(uint8_t *pdata, uint16_t Length)
+// {
+// 	if(Length == 0 || xtUart3.Send == USART_DMA_SENDING)
+// 		return;
+// 	while(xtUart3.Send == USART_DMA_SENDING){}
+// 	TXMODE_485();
+// 	xtUart3.Send = USART_DMA_SENDING;
+// 	HAL_UART_Transmit_DMA(&huart3, pdata, Length);
+// }
+
+//DMA发送完成中断回调函数
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+  __HAL_DMA_DISABLE(huart->hdmatx);
+
+  if (huart->Instance == huart1.Instance)
+    xtUart1.Send = USART_DMA_SENDOVER;
+  // else if(huart->Instance == huart3.Instance)
+  // {
+  // 	xtUart3.Send = USART_DMA_SENDOVER;
+  // }
+}
+
+static void HAL_UART_DMAStopRX(UART_HandleTypeDef *huart)
+{
+  CLEAR_BIT(huart->Instance->CR3, USART_CR3_DMAR);
+  HAL_DMA_Abort(huart->hdmarx);
+  CLEAR_BIT(huart->Instance->CR1, (USART_CR1_RXNEIE | USART_CR1_PEIE));
+  CLEAR_BIT(huart->Instance->CR3, USART_CR3_EIE);
+  /* At end of Rx process, restore huart->RxState to Ready */
+  huart->RxState = HAL_UART_STATE_READY;
+}
+
+//串口接收空闲中断
+void UsartReceive_IDLE(UART_HandleTypeDef *huart)
+{
+  if ((__HAL_UART_GET_FLAG(huart, UART_FLAG_IDLE) != RESET))
+  {
+    //		HAL_UART_DMAStop(huart);
+
+    HAL_UART_DMAStopRX(huart);
+    __HAL_UART_CLEAR_IDLEFLAG(huart);
+    if (huart->Instance == huart1.Instance)
+    {
+      xtUart1.RxLen = RECEIVELEN - __HAL_DMA_GET_COUNTER(huart->hdmarx);
+      xtUart1.Receive = 1;
+      HAL_UART_Receive_DMA(&huart1, xtUart1.RxBuf, RECEIVELEN);
+    }
+    // else if(huart->Instance == huart3.Instance)
+    // {
+    // 	xtUart3.RxLen =  RECEIVELEN - __HAL_DMA_GET_COUNTER(huart->hdmarx);
+    // 	xtUart3.Receive=1;
+    // 	HAL_UART_Receive_DMA(&huart3,xtUart3.RxBuf,RECEIVELEN);
+    // }
+  }
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+  //	__HAL_UART_GET_IT_SOURCE(huart,UART_IT_ERR);
+
+  __HAL_UART_CLEAR_PEFLAG(huart);
+
+  //UART_FLAG_ORE/UART_FLAG_NE/UART_FLAG_FE/UART_FLAG_PE
+  //	if(__HAL_UART_GET_FLAG(huart,UART_FLAG_ORE))
+  //		__HAL_UART_CLEAR_OREFLAG(huart);
+  //	if(__HAL_UART_GET_FLAG(huart,UART_FLAG_NE))
+  //		__HAL_UART_CLEAR_NEFLAG(huart);
+  //	if(__HAL_UART_GET_FLAG(huart,UART_FLAG_FE))
+  //		__HAL_UART_CLEAR_FEFLAG(huart);
+  //	if(__HAL_UART_GET_FLAG(huart,UART_FLAG_PE))
+  //		__HAL_UART_CLEAR_PEFLAG(huart);
+}
 
 /* USER CODE END 1 */
 

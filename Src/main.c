@@ -100,7 +100,18 @@ int main(void)
   MX_DAC_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+
+  __HAL_UART_CLEAR_FLAG(&huart1, UART_FLAG_TC);
+  // __HAL_UART_CLEAR_FLAG(&huart3, UART_FLAG_TC);
+
+  __HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
+  // __HAL_UART_ENABLE_IT(&huart3, UART_IT_IDLE);
+
+  HAL_UART_Receive_DMA(&huart1, xtUart1.RxBuf, RECEIVELEN);
+  // HAL_UART_Receive_DMA(&huart3, xtUart3.RxBuf, RECEIVELEN);
+
   user_setup();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
