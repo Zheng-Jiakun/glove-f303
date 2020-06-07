@@ -25,7 +25,9 @@ void user_setup()
     LCD_setCLK(GPIOC, GPIO_PIN_10);
 
     LCD_init();
-    LCD_print("Waiting for WiFi...", 0, 0);
+    LCD_print("GRIPPLY GLOVE ", 0, 0);
+    LCD_print("   WELCOME    ", 0, 1);
+    LCD_print("Waiting for WiFi...", 0, 2);
 
     HAL_Delay(1000);
 
@@ -37,13 +39,13 @@ CHECK_WIFI:
 
     if (wifi_status == -1)
     {
-        LCD_print("Timeout, retrying...", 0, 0);
+        LCD_print("Timeout, retrying...", 0, 2);
         goto CHECK_WIFI;
     }
     else if (wifi_status == 1)
     {
-        LCD_print("Connected! IP:", 0, 0);
-        LCD_print(ip_address, 0, 1);
+        LCD_print("Connected! IP:", 0, 2);
+        LCD_print(ip_address, 0, 3);
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
     }
 
