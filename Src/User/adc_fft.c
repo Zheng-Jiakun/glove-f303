@@ -1,5 +1,7 @@
 #include "adc_fft.h"
 
+uint16_t adc_results[5];
+
 uint16_t adc_result[ADC_SAMPLE_POINTS];
 float32_t fft_input[ADC_SAMPLE_POINTS];
 float32_t fft_output[ADC_SAMPLE_POINTS];
@@ -10,9 +12,12 @@ arm_rfft_fast_instance_f32 s;
 
 void init_adc_fft()
 {
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_result, ADC_SAMPLE_POINTS);
-    HAL_TIM_Base_Start(&htim6);
-    arm_rfft_fast_init_f32(&s, ADC_SAMPLE_POINTS);
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_results, 5);
+    HAL_TIM_Base_Start_IT(&htim6);
+
+    // HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_result, ADC_SAMPLE_POINTS);
+    // HAL_TIM_Base_Start(&htim6);
+    // arm_rfft_fast_init_f32(&s, ADC_SAMPLE_POINTS);
 }
 
 void process_fft()

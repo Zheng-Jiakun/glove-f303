@@ -8,7 +8,6 @@
 #include "nokia5110_LCD.h"
 
 uint8_t training_state = 0;
-uint16_t adc_results[5];
 uint16_t timestamp;
 
 void user_setup()
@@ -27,7 +26,8 @@ void user_setup()
     LCD_init();
     LCD_print("GRIPPLY GLOVE ", 0, 0);
     LCD_print("   WELCOME    ", 0, 1);
-    LCD_print("Waiting for WiFi...", 0, 2);
+    LCD_print("Waiting for  ", 0, 2);
+    LCD_print("WiFi...      ", 0, 3);
 
     HAL_Delay(1000);
 
@@ -85,8 +85,7 @@ CHECK_REGISTER:
         goto CHECK_REGISTER;
     }
 
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_results, 5);
-    HAL_TIM_Base_Start_IT(&htim6);
+    init_adc_fft();
 }
 
 void user_loop()

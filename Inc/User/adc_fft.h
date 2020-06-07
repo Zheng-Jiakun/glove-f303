@@ -9,6 +9,8 @@
 #define ADC_SAMPLE_POINTS   32
 #define FFT_POINTS  ADC_SAMPLE_POINTS/2
 
+extern uint16_t adc_results[5];
+
 extern uint16_t adc_result[ADC_SAMPLE_POINTS];
 extern float32_t fft_result[ADC_SAMPLE_POINTS/2];
 
