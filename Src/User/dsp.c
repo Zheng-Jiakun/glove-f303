@@ -75,7 +75,7 @@ void fir_lpf_init()
     /* Call FIR init function to initialize the instance structure. */
     arm_fir_init_f32(&S, NUM_TAPS, (float32_t *)&firCoeffs32[0], &firStateF32[0], BLOCK_SIZE);
 
-    HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)dac_dat, ADC_SAMPLE_POINTS, DAC_ALIGN_12B_R);
+    // HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)dac_dat, ADC_SAMPLE_POINTS, DAC_ALIGN_12B_R);
 }
 
 void fir_lpf()
@@ -107,5 +107,5 @@ void dac_get_input()
     for (uint16_t i = 0; i < ADC_SAMPLE_POINTS; i++)
         dac_dat[i] = fir_output[i];
 
-    dac_out = HAL_DAC_GetValue(&hdac, DAC_CHANNEL_1);
+    // dac_out = HAL_DAC_GetValue(&hdac, DAC_CHANNEL_1);
 }

@@ -57,6 +57,8 @@ int8_t check_register(const char *device_id)
         return 1;
     else if (strcmp((const char *)xtUart1.RxBuf, "no") == 0)
         return 0;
+    else
+        return -1;
 }
 
 int8_t register_device(const char *device_id)
@@ -109,19 +111,21 @@ int8_t sent_training_end(const char *data_id)
     return 1;
 }
 
-int8_t sent_training_data(const char *data_id, uint16_t data[5], char *time)
+int8_t sent_training_data(const char *data_id, uint16_t data[5], uint16_t timestamp)
 {
-    char data_str[5][4];
+    char data_str[5][6];
+    char time[6];
     for (uint8_t i = 0; i < 5; i++)
         __itoa(data[i], data_str[i], 10);
+    __itoa(timestamp, time, 10);
 
-    uint8_t post_data[] = "data-id=\0\0\0\0&header=training&status=doing&finger1=xxxx&finger2=xxxx&finger3=xxxx&finger4=xxxx&finger5=xxxx&timestamp=xxxxx";
+    static uint8_t post_data[] = "data-id=\0\0\0\0&header=training&status=doing&finger1=\0\0\0\0\0\0&finger2=\0\0\0\0\0\0&finger3=\0\0\0\0\0\0&finger4=\0\0\0\0\0\0&finger5=\0\0\0\0\0\0&timestamp=\0\0\0\0\0\0";
     strcpy((char *)post_data + 8, data_id);
 
-    uint8_t training_data[] = "&finger1=xxxx&finger2=xxxx&finger3=xxxx&finger4=xxxx&finger5=xxxx&timestamp=xxxxx";
+    uint8_t training_data[] = "&finger1=\0\0\0\0\0\0&finger2=\0\0\0\0\0\0&finger3=\0\0\0\0\0\0&finger4=\0\0\0\0\0\0&finger5=\0\0\0\0\0\0&timestamp=\0\0\0\0\0\0";
     for (uint8_t i = 0; i < 5; i++)
-        strcpy((char *)training_data + 9 + i * 13, (const char *)data_str[i]);
-    strcpy((char *)training_data + 76, (const char *)time);
+        strcpy((char *)training_data + 9 + i * 15, (const char *)data_str[i]);
+    strcpy((char *)training_data + 86, (const char *)time);
 
     memcpy((char *)post_data + 41, (const char *)training_data, sizeof(training_data) / sizeof(training_data[0]));
 

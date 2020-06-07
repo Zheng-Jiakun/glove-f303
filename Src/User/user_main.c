@@ -5,10 +5,11 @@
 #include "string.h"
 #include "tim.h"
 #include "dsp.h"
-#include "dac.h"
 #include "nokia5110_LCD.h"
-#include "stdlib.h"
 
+uint8_t training_state = 0;
+uint16_t adc_results[5];
+uint16_t timestamp;
 
 void user_setup()
 {
@@ -31,7 +32,7 @@ void user_setup()
     char ip_address[16];
     int8_t wifi_status;
 
-    CHECK_WIFI:
+CHECK_WIFI:
     wifi_status = check_wifi(ip_address);
 
     if (wifi_status == -1)
@@ -43,17 +44,20 @@ void user_setup()
     {
         LCD_print("Connected! IP:", 0, 0);
         LCD_print(ip_address, 0, 1);
+        HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
     }
-    
+
     int8_t register_status = 2;
 
-    CHECK_REGISTER:
+CHECK_REGISTER:
     register_status = check_register("1234");
-    while(register_status == 2);
+    while (register_status == 2)
+        ;
     if (register_status == 1)
     {
         LCD_print("  Registered  ", 0, 4);
         LCD_print(" Ready to use ", 0, 5);
+        HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
     }
     else if (register_status == 0)
     {
@@ -67,29 +71,20 @@ void user_setup()
         goto CHECK_REGISTER;
     }
 
-    while (register_status != 1 && HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == GPIO_PIN_SET);
-    
-    // LCD_print("  Retrying..  ", 0, 4);
-    // LCD_print("              ", 0, 5);
+    while (register_status != 1 && HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == GPIO_PIN_SET)
+        ;
 
     register_device("1234");
 
     if (register_status != 1)
+    {
+        LCD_print("  Retrying..  ", 0, 4);
+        LCD_print("              ", 0, 5);
         goto CHECK_REGISTER;
+    }
 
-    // static char dat_id[4];
-    // sent_training_start("2345", dat_id);
-
-    // // HAL_Delay(1000);
-
-    // uint16_t dat[5] = {123, 234, 345, 456, 567};
-    // for (uint8_t i = 0; i < 5; i++)
-    // {
-    //     sent_training_data(dat_id, dat, "11111");
-    //     // HAL_Delay(1000);
-    // }
-
-    // sent_training_end(dat_id);
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_results, 5);
+    HAL_TIM_Base_Start_IT(&htim6);
 }
 
 void user_loop()
@@ -99,8 +94,43 @@ void user_loop()
         HAL_Delay(20);
         if (HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == GPIO_PIN_RESET)
         {
+            HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
+            if (training_state == 0)
+                training_state = 1;
+            else if (training_state == 2)
+                training_state = 3;
         }
     }
-    HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-    HAL_Delay(2000);
+
+    static char dat_id[4];
+
+    switch (training_state)
+    {
+    case 0:
+        LCD_print(" Ready to use ", 0, 5);
+        break;
+
+    case 1:
+        timestamp = 0;
+        LCD_print(" Starting...  ", 0, 5);
+        sent_training_start("1234", dat_id);
+        training_state = 2;
+        LCD_print(" Training...  ", 0, 5);
+        break;
+
+    case 2:
+        sent_training_data(dat_id, adc_results, timestamp);
+        break;
+
+    case 3:
+        LCD_print(" Finishing... ", 0, 5);
+        sent_training_end(dat_id);
+        training_state = 0;
+        break;
+    
+    default:
+        break;
+    }
+
+    // HAL_GPIO_TogglePin(LED4_GPIO_Port, LED4_Pin);
 }
